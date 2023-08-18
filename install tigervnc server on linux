@@ -1,0 +1,17 @@
+sudo su -
+dnf groupinstall -y "Server with GUI" "Graphical Administration Tools"
+dnf install tigervnc-server tigervnc-server-module -y
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+echo “<linux instance lock pass>” | sudo passwd --stdin opc
+mkdir /home/opc/.vnc
+echo "<tigervnc pass>" | vncpasswd -f > /home/opc/.vnc/passwd
+chown -R opc:opc /home/opc/.vnc
+chmod 0600 /home/opc/.vnc/passwd
+sudo systemctl set-default graphical.target
+sudo cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:1.service
+echo ":1=opc" >> /etc/tigervnc/vncserver.users 
+echo "geometry=1280x1024" >> /etc/tigervnc/vncserver-config-defaults 
+systemctl daemon-reload
+systemctl enable --now vncserver@:1.service
+firewall-cmd --add-port=5901/tcp --permanent
+firewall-cmd --reload
